@@ -1,2 +1,0 @@
-.App{text-align:center;width:100vw;height:100vh}body{margin:0;padding:0;overflow:hidden}.home-container,body{width:100%;height:100%}.home-container{display:-webkit-flex;display:flex;-webkit-justify-content:center;justify-content:center;-webkit-align-items:center;align-items:center}.result{position:absolute}.enter-button{font-size:2rem;border:none;background-color:transparent;transition:1.3s}.enter-button:hover{-webkit-transform:scaleX(1.3) scaleY(1.5);transform:scaleX(1.3) scaleY(1.5)}.enter-button.clicked{display:none}
-/*# sourceMappingURL=main.7c1bbb2a.chunk.css.map */
