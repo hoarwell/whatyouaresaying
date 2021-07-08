@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 const Home = () => {
     const [result, setResult] = useState(""); // 결과
     const [click, setClick] = useState(false);
     const [support, setSupport] = useState(false);
     const [lang, setLang] = useState("ko-KR");
+    const [keyword, setKeyword] = useState("");
+    const [searchResult, setSearchResult] = useState("");
 
     const buttonRef = useRef();
     const resultRef = useRef();
     const selectRef = useRef();
+    const imgRef = useRef();
 
     const getRandom = (num) => {
         return Math.floor(Math.random() *  num);
@@ -70,9 +74,8 @@ const Home = () => {
     }
 
     let resultArray = [];
-
+    let images = [];
     let zIndex = 1;
-    console.log(lang)
 
     const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new speechRecognition();
@@ -97,24 +100,48 @@ const Home = () => {
             resultRef.current.style.top = `${ getRandom(window.innerHeight) - resultRef.current.style.height }px`;
             resultRef.current.style.zIndex = ++zIndex;
         }
+        if(imgRef.current && result.length % 10 === 0){
+            imgRef.current.style.left = `${ getRandom(window.innerWidth) - resultRef.current.style.width }px`;
+            imgRef.current.style.top = `${ getRandom(window.innerHeight) - resultRef.current.style.height }px`;
+            imgRef.current.style.zIndex = ++zIndex;
+        }
+    }
+
+    const getImage = () => {
+        axios.get(`http://images.google.com/images?um=1&hl=en&nfpr=1&q=${keyword}`)
+            .then((res)=> {
+                const search = document.querySelector(".search");
+                search.innerHTML = res.data;
+                search.querySelectorAll("img").forEach((element) => {
+                    if(element.hasAttribute("data-src")){
+                        const firstImage = element.getAttribute('data-src');
+                        images.push(firstImage);
+                        console.log(images)
+                        setSearchResult(images[0]);
+                    }
+                });
+            })
     }
 
     useEffect(() => {
         recognition.onresult = (e) => {
             if(e.results.length > 0){
                 for (let i = 0; i < e.results.length; i++) {
-                    console.log(e.results[i][0].transcript)
+                    setKeyword(e.results[i][0].transcript);
                     if (i === e.results.length - 1) {
                         resultArray.push(e.results[i][0].transcript);
-
                         setResult([...resultArray]); // 여기서 짝으로 배열에 넣어주면 될 것 같은데
                     }
                 }
             }
         }
+        if(result.length % 10 === 0){
+            getImage();
+        }
         changePosition();
     })
-    
+    console.log(keyword);
+    console.log(searchResult);
     console.log(result);
     // 음정의 톤에 따라 scaleX, scaleY 가 달라지는 이펙트도 좋을 것 같다.
     // animation의 경로도 바꿔지게
@@ -137,6 +164,10 @@ const Home = () => {
                     )
                 ) : ""
             }
+            {
+                searchResult ? <img className = "search-image" ref = { imgRef } src = { searchResult } alt = "" /> : ""
+            }
+            <div className= "search"></div>
         </div>
     );
 }
