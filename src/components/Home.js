@@ -59,9 +59,7 @@ const Home = () => {
         function play() {
             let array = new Uint8Array(analyser.frequencyBinCount);
             let values = 0;
-    
             analyser.getByteFrequencyData(array);
-    
             let length = array.length;
     
             for (let i = 0; i < length; i++) {
@@ -70,6 +68,7 @@ const Home = () => {
             let average = values / length;
                 requestAnimationFrame(play);
             }
+            
             play();
     }
 
@@ -95,7 +94,7 @@ const Home = () => {
 
     const changePosition = () => {
         if(result) {
-            resultRef.current.style.transform = `scale(${ getRandom(3)})`;
+            resultRef.current.style.transform = `scale(${ getRandom(5)})`;
             resultRef.current.style.left= `${ getRandom(window.innerWidth) - resultRef.current.style.width }px`;
             resultRef.current.style.top = `${ getRandom(window.innerHeight) - resultRef.current.style.height }px`;
             resultRef.current.style.zIndex = ++zIndex;
@@ -106,17 +105,18 @@ const Home = () => {
             imgRef.current.style.zIndex = ++zIndex;
         }
     }
-
+    let count = 1;
+    
     const getImage = () => {
         axios.get(`https://images.google.com/images?um=1&hl=en&nfpr=1&q=${keyword}`)
             .then((res)=> {
+                console.log(++count);
                 const search = document.querySelector(".search");
                 search.innerHTML = res.data;
                 search.querySelectorAll("img").forEach((element) => {
                     if(element.hasAttribute("data-src")){
                         const firstImage = element.getAttribute('data-src');
                         images.push(firstImage);
-                        console.log(images)
                         setSearchResult(images[0]);
                     }
                 });
@@ -135,13 +135,11 @@ const Home = () => {
                 }
             }
         }
-        if(result.length % 10 === 0){
+        if((result.length % 10) === 0){
             getImage();
         }
         changePosition();
     })
-    console.log(keyword);
-    console.log(searchResult);
     console.log(result);
     // 음정의 톤에 따라 scaleX, scaleY 가 달라지는 이펙트도 좋을 것 같다.
     // animation의 경로도 바꿔지게
