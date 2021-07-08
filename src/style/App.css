@@ -2,6 +2,7 @@
   text-align: center;
   width: 100vw;
   height: 100vh;
+  font-family: '굴림체'
 }
 
 body {
@@ -9,19 +10,25 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: hidden;   
+}
+
+img {
+  width: 100px;
 }
 
 .home-container {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
 .result {
   position: absolute;
+  transition: all 2s linear;
 }
 
 .enter-button {
@@ -32,9 +39,21 @@ body {
 }
 
 .enter-button:hover {
-  transform: scaleX(1.3) scaleY(1.5);
+  cursor: pointer;
 }
 
 .enter-button.clicked {
+  display: none;
+}
+
+.sentence {
+  position: absolute;
+}
+
+.sentence.clicked {
+  display: none;
+}
+
+.select.clicked {
   display: none;
 }
