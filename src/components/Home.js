@@ -108,7 +108,7 @@ const Home = () => {
     }
 
     const getImage = () => {
-        axios.get(`http://images.google.com/images?um=1&hl=en&nfpr=1&q=${keyword}`)
+        axios.get(`https://images.google.com/images?um=1&hl=en&nfpr=1&q=${keyword}`)
             .then((res)=> {
                 const search = document.querySelector(".search");
                 search.innerHTML = res.data;
