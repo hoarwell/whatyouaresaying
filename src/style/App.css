@@ -14,7 +14,8 @@ body {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;   
+  overflow: hidden;  
+  background-color: white;
 }
 
 .App {
@@ -84,4 +85,24 @@ img {
 .search-image {
   width: 300px;
   height: auto;
+}
+
+.char-container {
+  display: inline-block;
+  transition-duration: 1s;
+}
+
+.char {
+  font-size: 1rem;
+  animation: 1s apear linear;
+}
+
+@keyframes appear {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }

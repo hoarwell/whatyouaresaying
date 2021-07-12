@@ -8,16 +8,21 @@ const Home = () => {
     const [keyword, setKeyword] = useState("");
     const [searchResult, setSearchResult] = useState("");
     const [detecting, setDetecting] = useState(false);
+    const [char, setChar] = useState("");
+    const [freq, setFreq] = useState("")
 
     const buttonRef = useRef();
     const resultRef = useRef();
     const selectRef = useRef();
     const imgRef = useRef();
 
+    let fontStyle;
+
     let images = [];
     let zIndex = 1;
 
     let finalArray = [];
+    let charArray = [];
 
     const getRandom = (min, max) => {
         return Math.floor(Math.random() * (max - min) + min);
@@ -26,13 +31,54 @@ const Home = () => {
     const handleSelect = (e) => {
         setLang(e.target.value);
     }
-
+    // speech recognition
     const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new speechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = lang;
-    
+
+    // get usermedia
+    navigator.getUserMedia = navigator.getUserMedia
+                        || navigator.webkitGetUserMedia
+                        || navigator.mozGetUserMedia;
+
+    const callback = (stream) => {
+        let ctx = new AudioContext();
+        let mic = ctx.createMediaStreamSource(stream);
+        let analyser = ctx.createAnalyser();
+        let osc = ctx.createOscillator();
+
+        mic.connect(analyser); 
+        osc.connect(ctx.destination);
+        osc.start(0);
+
+        let data = new Uint8Array(analyser.frequencyBinCount);
+
+        function play() {
+            analyser.getByteFrequencyData(data);
+
+            let idx = 0;
+            for (let j=0; j < analyser.frequencyBinCount; j++) {
+                if (data[j] > data[idx]) {
+                    idx = j;
+                }
+            }
+
+            let frequency = idx * ctx.sampleRate / analyser.fftSize;
+            osc.frequency.value = frequency;
+            document.body.style.backgroundColor = `rgb(${frequency / 5}, ${frequency / 5}, ${frequency / 5})`;
+            const elements = document.querySelectorAll('.result');
+            if(elements.length > 0){
+                elements[elements.length - 1].style.color = `rgb(${-((frequency / 5) - 255)}, ${-((frequency / 5) - 255)}, ${-((frequency / 5) - 255)})`;
+            }
+            requestAnimationFrame(play);
+        }
+        play();
+    }
+
+    navigator.getUserMedia({ video : false, audio : true }, callback, console.log);
+
     const handleClick = () => {
         setClick(!click);
         handleStart();
@@ -50,23 +96,21 @@ const Home = () => {
     const changePosition = () => {
         let elements = document.querySelectorAll('.result');
         for(let i = 0; i <  elements.length; i++){
-            elements[elements.length - 1].style.transform = `scale(${ getRandom(0.5, 5)})`;
-            elements[elements.length - 1].style.transform = `scale(${ getRandom(0.5, 5)})`;
+            // elements[elements.length - 1].style.transform = `scaleY(${ getRandom(0.5, 5)})`;
             elements[elements.length - 1].style.left= `${ getRandom(100, window.innerWidth)}px`;
             elements[elements.length - 1].style.top = `${ getRandom(100, window.innerHeight)}px`;
             elements[elements.length - 1].style.zIndex = ++zIndex;
         }
     }
-
-    const typeWriter = () => {
-        let i = 0;
-        let render = ""
     
-        if(final.length > 0){
-            if (i < final.length) {
-                render += [final.length - 1].charAt(i);
-                i++;
+    const typeWriter = (transcript) => {
+        if(transcript){
+            let string = transcript[transcript.length-1];
+            for(let i = 0; i < string.length; i++){
+                charArray.push(string.charAt(i));
+                setTimeout(typeWriter, 50);
             }
+            setChar(charArray);
         }
     }
 
@@ -86,7 +130,6 @@ const Home = () => {
             }
         )
     }
-    console.log(searchResult);
 
     const handleResult = () => {
         recognition.onresult = (e) => {
@@ -99,8 +142,8 @@ const Home = () => {
                 finalArray.push(finalTranscripts);
             }
             setFinal(...final, finalArray.filter((element) => element !== ""));
-            console.log(finalArray)
             getImage(finalArray)
+            typeWriter(finalArray)
             changePosition();
         }
 
@@ -119,11 +162,11 @@ const Home = () => {
             setDetecting(false);
         }
     }
-    console.log(final, "final");
 
     useEffect(() => {
         handleResult();
         // getImage function 두면 axios 요청이 너무 많아짐
+        typeWriter();
     })
 
     return (
@@ -147,6 +190,15 @@ const Home = () => {
                     searchResult ? <img className = "search-image" ref = { imgRef } src = { searchResult } alt = "" /> : ""
                 }
                 <div className= "search"></div>
+                <div className= "char-container">
+                    {
+                        char ? (
+                            char.map((text, i) => (
+                                <p className = "char" data-id = { i }>{ text }</p>
+                            ))
+                        ) : ""
+                    }
+                </div>
             </div>
     );
 }
