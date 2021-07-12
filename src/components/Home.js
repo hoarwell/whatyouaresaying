@@ -2,89 +2,40 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const Home = () => {
-    const [result, setResult] = useState(""); // 결과
+    const [final, setFinal] = useState("");
     const [click, setClick] = useState(false);
-    const [support, setSupport] = useState(false);
     const [lang, setLang] = useState("ko-KR");
     const [keyword, setKeyword] = useState("");
     const [searchResult, setSearchResult] = useState("");
+    const [detecting, setDetecting] = useState(false);
 
     const buttonRef = useRef();
     const resultRef = useRef();
     const selectRef = useRef();
     const imgRef = useRef();
 
-    const getRandom = (num) => {
-        return Math.floor(Math.random() *  num);
-    }
+    let images = [];
+    let zIndex = 1;
 
-    navigator.getUserMedia = ( navigator.getUserMedia ||
-        navigator.webkitGetUserMedia ||
-        navigator.mozGetUserMedia ||
-        navigator.msGetUserMedia );
-    
-    let constraints = { 
-        video : false, 
-        audio : true,
+    let finalArray = [];
+
+    const getRandom = (min, max) => {
+        return Math.floor(Math.random() * (max - min) + min);
     }
 
     const handleSelect = (e) => {
         setLang(e.target.value);
     }
 
-    const askSupport = () => {
-        if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { 
-            setSupport(true);
-        } else {
-            setSupport(false);
-        }
-    }
-
-    useEffect(() => {
-        askSupport();
-    }, [])
-    
-    if(support){
-        let promise = navigator.mediaDevices.getUserMedia(constraints);
-        promise.then(callback).catch(err => console.log(err));
-    }
-
-    function callback(stream) {
-        let ctx = new AudioContext();
-        let mic = ctx.createMediaStreamSource(stream);
-        let analyser = ctx.createAnalyser();
-        
-        mic.connect(analyser);
-
-        function play() {
-            let array = new Uint8Array(analyser.frequencyBinCount);
-            let values = 0;
-            analyser.getByteFrequencyData(array);
-            let length = array.length;
-    
-            for (let i = 0; i < length; i++) {
-                values += (array[i]);
-            }
-            let average = values / length;
-                requestAnimationFrame(play);
-            }
-            
-            play();
-    }
-
-    let resultArray = [];
-    let images = [];
-    let zIndex = 1;
-
     const speechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new speechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.interimResults = false;
     recognition.lang = lang;
     
     const handleClick = () => {
         setClick(!click);
-        recognition.start();
+        handleStart();
         buttonRef.current.classList.add('clicked');
         document.querySelectorAll('.sentence').forEach((element) => {
             element.classList.add('clicked');
@@ -92,81 +43,111 @@ const Home = () => {
         selectRef.current.classList.add('clicked');
     }
 
+    const handleStart = () => {
+        recognition.start();
+    }
+
     const changePosition = () => {
-        if(result) {
-            resultRef.current.style.transform = `scale(${ getRandom(5)})`;
-            resultRef.current.style.left= `${ getRandom(window.innerWidth) - resultRef.current.style.width }px`;
-            resultRef.current.style.top = `${ getRandom(window.innerHeight) - resultRef.current.style.height }px`;
-            resultRef.current.style.zIndex = ++zIndex;
-        }
-        if(imgRef.current && result.length % 10 === 0){
-            imgRef.current.style.left = `${ getRandom(window.innerWidth) - resultRef.current.style.width }px`;
-            imgRef.current.style.top = `${ getRandom(window.innerHeight) - resultRef.current.style.height }px`;
-            imgRef.current.style.zIndex = ++zIndex;
+        let elements = document.querySelectorAll('.result');
+        for(let i = 0; i <  elements.length; i++){
+            elements[elements.length - 1].style.transform = `scale(${ getRandom(0.5, 5)})`;
+            elements[elements.length - 1].style.transform = `scale(${ getRandom(0.5, 5)})`;
+            elements[elements.length - 1].style.left= `${ getRandom(100, window.innerWidth)}px`;
+            elements[elements.length - 1].style.top = `${ getRandom(100, window.innerHeight)}px`;
+            elements[elements.length - 1].style.zIndex = ++zIndex;
         }
     }
-    let count = 1;
+
+    const typeWriter = () => {
+        let i = 0;
+        let render = ""
     
-    const getImage = () => {
-        axios.get(`https://images.google.com/images?um=1&hl=en&nfpr=1&q=${keyword}`)
-            .then((res)=> {
-                console.log(++count);
+        if(final.length > 0){
+            if (i < final.length) {
+                render += [final.length - 1].charAt(i);
+                i++;
+            }
+        }
+    }
+
+    const getImage = (transcript) => {
+        console.log("getImage executed,", transcript[transcript.length-1])
+        axios.get(`https://images.google.com/images?um=1&hl=en&nfpr=1&q=${transcript[transcript.length-1]}`)
+            .then((res)=> { 
                 const search = document.querySelector(".search");
                 search.innerHTML = res.data;
                 search.querySelectorAll("img").forEach((element) => {
                     if(element.hasAttribute("data-src")){
                         const firstImage = element.getAttribute('data-src');
                         images.push(firstImage);
-                        setSearchResult(images[0]);
+                        setSearchResult(images[images.length-1]);
                     }
                 });
-            })
+            }
+        )
     }
+    console.log(searchResult);
+
+    const handleResult = () => {
+        recognition.onresult = (e) => {
+            let finalTranscripts = "";
+            for(let i = e.resultIndex; i < e.results.length; i++){
+                let transcript = e.results[i][0].transcript;
+                if (e.results[i].isFinal) { 
+                    finalTranscripts += transcript;
+                }
+                finalArray.push(finalTranscripts);
+            }
+            setFinal(...final, finalArray.filter((element) => element !== ""));
+            console.log(finalArray)
+            getImage(finalArray)
+            changePosition();
+        }
+
+        recognition.onsoundstart = () => {
+            console.log('Some sound is being received');
+        }
+
+        recognition.onspeechstart = () => {
+            console.log('Speech has been detected');
+            setDetecting(true);
+        }
+
+        recognition.onspeechend = function() {
+            console.log('Speech has stopped being detected');
+            recognition.stop();
+            setDetecting(false);
+        }
+    }
+    console.log(final, "final");
 
     useEffect(() => {
-        recognition.onresult = (e) => {
-            if(e.results.length > 0){
-                for (let i = 0; i < e.results.length; i++) {
-                    setKeyword(e.results[i][0].transcript);
-                    if (i === e.results.length - 1) {
-                        resultArray.push(e.results[i][0].transcript);
-                        setResult([...resultArray]); // 여기서 짝으로 배열에 넣어주면 될 것 같은데
-                    }
-                }
-            }
-        }
-        if((result.length % 10) === 0){
-            getImage();
-        }
-        changePosition();
+        handleResult();
+        // getImage function 두면 axios 요청이 너무 많아짐
     })
-    console.log(result);
-    // 음정의 톤에 따라 scaleX, scaleY 가 달라지는 이펙트도 좋을 것 같다.
-    // animation의 경로도 바꿔지게
 
     return (
-        <div className = "home-container">
-            <button className = "enter-button" onClick = { handleClick } ref = { buttonRef }>
-                <img src = "https://pngimg.com/uploads/ear/ear_PNG35695.png" alt = "" />
-            </button>
-            <select className = "select" onChange = { handleSelect } ref = { selectRef }>
-                <option value="ko-KR" selected>Korean</option> 
-                <option value="en-US">English</option>
-                <option value="es-ES">Spanish</option>
-                <option value="fr-FR">French</option>
-                <option value="ja-JP">Japanese</option>
-            </select>
-            {
-                result ? result.map((data, i) => (
-                        <p className = "result" ref = { resultRef }>{ data }</p>
-                    )
-                ) : ""
-            }
-            {
-                searchResult ? <img className = "search-image" ref = { imgRef } src = { searchResult } alt = "" /> : ""
-            }
-            <div className= "search"></div>
-        </div>
+            <div className = "home-container">
+                <button className = "enter-button" onClick = { handleClick } ref = { buttonRef }>
+                    <img src = "https://pngimg.com/uploads/ear/ear_PNG35695.png" alt = "ear-image" />
+                </button>
+                <select className = "select" onChange = { handleSelect } ref = { selectRef }>
+                    <option value="ko-KR" selected>Korean</option> 
+                    <option value="en-US">English</option>
+                    <option value="es-ES">Spanish</option>
+                    <option value="fr-FR">French</option>
+                    <option value="ja-JP">Japanese</option>
+                </select>
+                {
+                    final ? final.map((data, i) =>
+                        <p className = "result">{ data }</p>
+                    ) : ""
+                }
+                {
+                    searchResult ? <img className = "search-image" ref = { imgRef } src = { searchResult } alt = "" /> : ""
+                }
+                <div className= "search"></div>
+            </div>
     );
 }
 
