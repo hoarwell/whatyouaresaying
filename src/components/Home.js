@@ -38,46 +38,6 @@ const Home = () => {
     recognition.interimResults = false;
     recognition.lang = lang;
 
-    // get usermedia
-    navigator.getUserMedia = navigator.getUserMedia
-                        || navigator.webkitGetUserMedia
-                        || navigator.mozGetUserMedia;
-
-    const callback = (stream) => {
-        let ctx = new AudioContext();
-        let mic = ctx.createMediaStreamSource(stream);
-        let analyser = ctx.createAnalyser();
-        let osc = ctx.createOscillator();
-
-        mic.connect(analyser); 
-        osc.connect(ctx.destination);
-        osc.start(0);
-
-        let data = new Uint8Array(analyser.frequencyBinCount);
-
-        function play() {
-            analyser.getByteFrequencyData(data);
-
-            let idx = 0;
-            for (let j=0; j < analyser.frequencyBinCount; j++) {
-                if (data[j] > data[idx]) {
-                    idx = j;
-                }
-            }
-
-            let frequency = idx * ctx.sampleRate / analyser.fftSize;
-            osc.frequency.value = frequency;
-            document.body.style.backgroundColor = `rgb(${frequency / 5}, ${frequency / 5}, ${frequency / 5})`;
-            const elements = document.querySelectorAll('.result');
-            if(elements.length > 0){
-                elements[elements.length - 1].style.color = `rgb(${-((frequency / 5) - 255)}, ${-((frequency / 5) - 255)}, ${-((frequency / 5) - 255)})`;
-            }
-            requestAnimationFrame(play);
-        }
-        play();
-    }
-
-    navigator.getUserMedia({ video : false, audio : true }, callback, console.log);
 
     const handleClick = () => {
         setClick(!click);
@@ -116,7 +76,7 @@ const Home = () => {
 
     const getImage = (transcript) => {
         console.log("getImage executed,", transcript[transcript.length-1])
-        axios.get(`https://images.google.com/images?um=1&hl=en&nfpr=1&q=${transcript[transcript.length-1]}`)
+        axios.get(`/images?&um=1&hl=en&nfpr=1&q=${transcript[transcript.length-1]}`)
             .then((res)=> { 
                 const search = document.querySelector(".search");
                 search.innerHTML = res.data;
@@ -136,7 +96,7 @@ const Home = () => {
             let finalTranscripts = "";
             for(let i = e.resultIndex; i < e.results.length; i++){
                 let transcript = e.results[i][0].transcript;
-                if (e.results[i].isFinal) { 
+                if (e.results[i].isFinal) {
                     finalTranscripts += transcript;
                 }
                 finalArray.push(finalTranscripts);
@@ -190,15 +150,6 @@ const Home = () => {
                     searchResult ? <img className = "search-image" ref = { imgRef } src = { searchResult } alt = "" /> : ""
                 }
                 <div className= "search"></div>
-                <div className= "char-container">
-                    {
-                        char ? (
-                            char.map((text, i) => (
-                                <p className = "char" data-id = { i }>{ text }</p>
-                            ))
-                        ) : ""
-                    }
-                </div>
             </div>
     );
 }
